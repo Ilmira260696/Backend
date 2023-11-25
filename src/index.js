@@ -1,44 +1,39 @@
-const http = require("http");
-const getUsers = require("./modules/users");
-const hostname = "127.0.0.1";
-const port = 3003;
+const express = require("express");
+const dotenv = require("dotenv");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const mongoose = require("mongoose");
 
-const server = http.createServer((request, res) => {
-const url = new URL(request.url, `http://${hostname}`);
-console.log(url);
-console.log(url.searchParams);
-const query = url.searchParams;
+const userRouter = require("./routes/users");
+const bookRouter = require("./routes/books");
+const loggerOne = require("./middlewares/loggerOne");
 
-  if (query.has("hello")) {
-    const name = query.get("hello");
-    if (name) {
-      res.statusCode = 200;
-      rese.header = "Content-Type: text/plain";
-      res.write(`Hello,${name}`);
-      res.end();
-      return;
-    }
-    res.statusCode = 400;
-    res.header = "Content-Type: text/plain";
-    res.write("Enter a name");
-    res.end();
-  } else if (request.url === "/users") {
-    res.status = 200;
-    res.header = "Content-Type: application/json";
-    res.write(getUsers());
-    res.end();
-  } else if (request.url === "/") {
-    res.statusCode = 200;
-    res.header = "Content-Type: text/plain";
-    res.write("Hello world");
-    res.end();
-  } else {
-    res.statusCode = 500;
-    res.header = "Content-Type: text/plain";
-    res.write("Not Found");
-    res.end();
-  }
+dotenv.config();
+
+const {
+  PORT = 3005,
+  API_URL = "http://127.0.0.1",
+  MONGO_URL = "mongodb://127.0.0.1:27017/mydb",
+} = process.env;
+
+mongoose
+  .connect(MONGO_URL)
+  .then(console.log("Connected to MongoDB"))
+  .catch((error) => console.log(error.message));
+
+const app = express();
+
+app.use(cors());
+app.use(loggerOne);
+app.use(bodyParser.json());
+
+app.use(userRouter);
+app.use(bookRouter);
+
+app.get("/", (req, res) => {
+  res.send("Библиотека книг");
 });
-server.listen(port, hostname, () => {
-  console.log(`Сервер запущен по адресу http://${hostname}:${port}/`);
+
+app.listen(PORT, () => {
+  console.log(`Сервер запущен по адресу: ${API_URL}:${PORT}`);
 });
